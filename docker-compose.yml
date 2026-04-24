@@ -52,8 +52,9 @@ services:
     restart: unless-stopped
 
   client:
-    build: ../client
-    args:
+    build:
+      context: ../client
+      args:
         - NEXT_PUBLIC_API_URL=https://api.klodit.app/api/v1
     container_name: client
     ports:
