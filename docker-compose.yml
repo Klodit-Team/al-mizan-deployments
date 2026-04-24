@@ -14,6 +14,12 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:3001
       - USERS_SERVICE_URL=http://users-service:3002
       - DOCUMENTS_SERVICE_URL=http://documents-service:8005
+      - TENDERS_SERVICE_URL=http://appel-offres-service:8003
+      - SUBMISSIONS_SERVICE_URL=http://soumission-service:8004
+      - EVALUATIONS_SERVICE_URL=http://evaluation-service:8008
+      - COMMISSIONS_SERVICE_URL=http://commission-service:8007
+      - APPEALS_SERVICE_URL=http://recours-service:8008
+      - NOTIFICATIONS_SERVICE_URL=http://notification-service:8010
       - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://34.155.70.30:4000,http://localhost:4000
     networks:
       - al-mizan-network
