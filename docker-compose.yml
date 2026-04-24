@@ -106,6 +106,7 @@ services:
       - MINIO_ENDPOINT=http://al-mizan-minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET_NAME=al-mizan-docs
       - AO_SERVICE_URL=http://appel-offres-service:8003
       - USER_SERVICE_URL=http://users-service:3002
       - DOCUMENT_SERVICE_URL=http://documents-service:8005
