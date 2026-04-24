@@ -97,6 +97,8 @@ services:
       - DB_PORT=3306
       - DB_USERNAME=root
       - DB_PASSWORD=password
+      - DB_DATABASE=soumission_db 
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update  
       - REDIS_HOST=al-mizan-redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=al-mizan-rabbitmq
