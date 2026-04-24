@@ -194,3 +194,4 @@ services:
 networks:
   al-mizan-network:
     external: true
+# TEST AUTOMATION SCRIPT WORKING
