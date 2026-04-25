@@ -1,0 +1,1 @@
+{"success":true,"statusCode":200,"timestamp":"2026-04-25T09:09:31.028Z","data":{"status":"ok","service":"notification-service","version":"1.0.0","timestamp":"2026-04-25T09:09:31.028Z","checks":{"postgres":"ok","redis":"ok"}}}
