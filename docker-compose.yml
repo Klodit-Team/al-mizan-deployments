@@ -93,6 +93,8 @@ services:
     ports:
       - "8004:8004"
     environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - security.dev-fallback.enabled=true
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
       - DB_USERNAME=root
