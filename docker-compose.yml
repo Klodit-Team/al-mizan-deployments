@@ -93,14 +93,14 @@ services:
     ports:
       - "8004:8004"
     environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      - security.dev-fallback.enabled=true
+      # Removed Dev mode for maximum production security!
+      - SPRING_PROFILES_ACTIVE=prod
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
       - DB_USERNAME=root
       - DB_PASSWORD=password
       - DB_DATABASE=soumission_db 
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update  
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate  
       - REDIS_HOST=al-mizan-redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=al-mizan-rabbitmq
@@ -142,7 +142,7 @@ services:
     ports:
       - "8006:8008" 
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production  # Locked schema!
       - PORT=8008
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
@@ -164,7 +164,7 @@ services:
     ports:
       - "8007:8007"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production  # Locked schema!
       - PORT=8007
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
@@ -212,4 +212,3 @@ services:
 networks:
   al-mizan-network:
     external: true
-# TEST AUTOMATION SCRIPT WORKING
