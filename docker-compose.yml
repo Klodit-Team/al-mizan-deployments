@@ -140,6 +140,7 @@ services:
     ports:
       - "8006:8008" 
     environment:
+      - NODE_ENV=development
       - PORT=8008
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
@@ -161,6 +162,7 @@ services:
     ports:
       - "8007:8007"
     environment:
+      - NODE_ENV=development
       - PORT=8007
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
