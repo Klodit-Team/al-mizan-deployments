@@ -1,107 +1,19 @@
-version: '3.3'
-
-services:
-  # ═════════ 1. CORE SERVICES ═════════
-  api-gateway:
-    build: ../api-gateway
-    container_name: api-gateway
-    ports:
-      - "3000:3000"
-    environment:
-      - PORT=3000
-      - REDIS_URL=redis://al-mizan-redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - USERS_SERVICE_URL=http://users-service:3002
-      - DOCUMENTS_SERVICE_URL=http://documents-service:8005
-      - TENDERS_SERVICE_URL=http://appel-offres-service:8003
-      - SUBMISSIONS_SERVICE_URL=http://soumission-service:8004
-      - EVALUATIONS_SERVICE_URL=http://evaluation-service:8008
-      - COMMISSIONS_SERVICE_URL=http://commission-service:8007
-      - APPEALS_SERVICE_URL=http://recours-service:8008
-      - NOTIFICATIONS_SERVICE_URL=http://notification-service:8010
-      - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://34.155.70.30:4000,http://localhost:4000
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-  auth-service:
-    build: ../auth-service
-    container_name: auth-service
-    ports:
-      - "3001:3001"
-    environment:
-      - PORT=3001
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/auth_db
-      - REDIS_URL=redis://al-mizan-redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-      - ACCESS_TOKEN_SECRET=supersecretaccess
-      - REFRESH_TOKEN_SECRET=supersecretrefresh
-      - USERS_SERVICE_URL=http://users-service:3002
-      - ACCESS_TOKEN_EXPIRY=1h
-      - REFRESH_TOKEN_EXPIRY=7d
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-  users-service:
-    build: ../users-service
-    container_name: users-service
-    ports:
-      - "3002:3002"
-    environment:
-      - PORT=3002
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/al_mizan_users
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-  client:
-    build:
-      context: ../client
-      args:
-        - NEXT_PUBLIC_API_URL=https://api.klodit.app
-    container_name: client
-    ports:
-      - "4000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=https://api.klodit.app
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-  # ═════════ 2. BUSINESS SERVICES ═════════
-  appel-offres-service:
-    build: ../appel-offres-service
-    container_name: appel-offres-service
-    ports:
-      - "8003:8003"
-    environment:
-      - PORT=8003
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/ao_db
-      - REDIS_HOST=al-mizan-redis
-      - REDIS_PORT=6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-      - DOCUMENT_SERVICE_URL=http://documents-service:8005
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-  soumission-service:
+soumission-service:
     build: ../soumission-service
     container_name: soumission-service
     ports:
       - "8004:8004"
     environment:
-      # Removed Dev mode for maximum production security!
-      - SPRING_PROFILES_ACTIVE=prod
+      # DEV MODE ACTIVATED
+      - SPRING_PROFILES_ACTIVE=dev
+      - security.dev-fallback.enabled=true
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
       - DB_USERNAME=root
       - DB_PASSWORD=password
       - DB_DATABASE=soumission_db 
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=validate  
+      # Allows Hibernate to auto-create/update tables in Dev
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update  
       - REDIS_HOST=al-mizan-redis
       - REDIS_PORT=6379
       - RABBITMQ_HOST=al-mizan-rabbitmq
@@ -117,33 +29,14 @@ services:
       - al-mizan-network
     restart: unless-stopped
 
-  documents-service:
-    build: ../documents-service
-    container_name: documents-service
-    ports:
-      - "8005:8005"
-    environment:
-      - PORT=8005
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/document_db
-      - MINIO_ENDPOINT=al-mizan-minio
-      - MINIO_PORT=9000
-      - MINIO_USE_SSL=false
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-      - MINIO_BUCKET_NAME=al-mizan-docs
-      - REDIS_URL=redis://al-mizan-redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
   evaluation-service:
     build: ../evaluation-service
     container_name: evaluation-service
     ports:
       - "8006:8008" 
     environment:
-      - NODE_ENV=production  # Locked schema!
+      # DEV MODE ACTIVATED
+      - NODE_ENV=development 
       - PORT=8008
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
@@ -165,7 +58,8 @@ services:
     ports:
       - "8007:8007"
     environment:
-      - NODE_ENV=production  # Locked schema!
+      # DEV MODE ACTIVATED
+      - NODE_ENV=development
       - PORT=8007
       - DB_HOST=al-mizan-mysql
       - DB_PORT=3306
@@ -180,36 +74,3 @@ services:
     networks:
       - al-mizan-network
     restart: unless-stopped
-
-  recours-service:
-    build: ../recours-service
-    container_name: recours-service
-    ports:
-      - "8008:8008"
-    environment:
-      - PORT=8008
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/recours_db
-      - REDIS_HOST=al-mizan-redis
-      - REDIS_PORT=6379
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-  notification-service:
-    build: ../notification-service
-    container_name: notification-service
-    ports:
-      - "8010:8010"
-    environment:
-      - PORT=8010
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/notif_db
-      - REDIS_HOST=al-mizan-redis
-      - REDIS_PORT=6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-networks:
-  al-mizan-network:
-    external: true
