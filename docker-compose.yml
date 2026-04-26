@@ -38,7 +38,6 @@ services:
       - ACCESS_TOKEN_SECRET=supersecretaccess
       - REFRESH_TOKEN_SECRET=supersecretrefresh
       - USERS_SERVICE_URL=http://users-service:3002
-      - USERS_SERVICE_URL=http:
       - ACCESS_TOKEN_EXPIRY=1h
       - REFRESH_TOKEN_EXPIRY=7d
     networks:
