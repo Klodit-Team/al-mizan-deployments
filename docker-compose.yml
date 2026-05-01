@@ -190,3 +190,6 @@ services:
     environment:
       - PORT=8008
       - DATABASE_URL=mysql://root:password@al-mizan-mysql:3
+networks:
+  al-mizan-network:
+    external: true
