@@ -58,16 +58,16 @@ services:
       - al-mizan-network
     restart: unless-stopped
 
-  client:
+client:
     build:
       context: ../client
       args:
-        - NEXT_PUBLIC_API_URL=https://api.klodit.app
+        - NEXT_PUBLIC_API_URL=https://klodit.app
     container_name: client
     ports:
       - "4000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://api.klodit.app
+      - NEXT_PUBLIC_API_URL=https://klodit.app
     networks:
       - al-mizan-network
     restart: unless-stopped
