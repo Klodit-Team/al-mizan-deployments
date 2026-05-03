@@ -58,7 +58,7 @@ services:
       - al-mizan-network
     restart: unless-stopped
 
-client:
+  client:
     build:
       context: ../client
       args:
