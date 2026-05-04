@@ -28,6 +28,8 @@ services:
   auth-service:
     build: ../auth-service
     container_name: auth-service
+    env_file:
+      - .env
     ports:
       - "3001:3001"
     environment:
