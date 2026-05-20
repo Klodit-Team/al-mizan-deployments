@@ -19,10 +19,10 @@ jobs:
           key: ${{ secrets.GCP_SSH_KEY }}
           script: |
             echo "🚀 Pulling new Infrastructure configurations..."
-            cd ~/al-mizan-deployment
+            cd ~/al-mizan-deployments
             git pull
             
             echo "⚙️ Applying Docker Compose changes..."
-            sudo docker-compose up -d
+            docker compose up -d
             
             echo "✅ Infrastructure Deployment Successful!"
