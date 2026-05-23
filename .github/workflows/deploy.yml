@@ -17,6 +17,7 @@ jobs:
           host: ${{ secrets.GCP_HOST }}
           username: ${{ secrets.GCP_USERNAME }}
           key: ${{ secrets.GCP_SSH_KEY }}
+        passphrase: ${{ secrets.GCP_PASSPHRASE }}
           script: |
             echo "🚀 Pulling new Infrastructure configurations..."
             cd ~/al-mizan-deployments
