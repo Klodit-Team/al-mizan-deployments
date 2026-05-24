@@ -64,12 +64,12 @@ services:
     build:
       context: ../client
       args:
-        - NEXT_PUBLIC_API_URL=https://klodit.app
+        - NEXT_PUBLIC_API_URL=http://api-gateway:3000
     container_name: client
     ports:
       - "4000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=https://klodit.app
+      - NEXT_PUBLIC_API_URL=http://api-gateway:3000
     networks:
       - al-mizan-network
     restart: unless-stopped
