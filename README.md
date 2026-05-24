@@ -1,66 +1,127 @@
-# *(AI SYSTEM PROMPT: ARCHITECTURAL BOUNDARIES & CONTEXT)*
 
+# AL-Mizan Deployment Registry (`al-mizan-deployments`)
 
-## SYSTEM ARCHITECTURE & CONTEXT HANDOFF DOCUMENT
+This repository contains the orchestration, configuration, and environment setup required to deploy and run the **AL-Mizan** platform—a sovereign and intelligent public procurement management system.
 
-**Project Name:** **AL-Mizan (Public Procurement Platform / e-Procurement)**
-Architecture: **Event-Driven Microservices (Dockerized)**
-Deployment: **Single Google Cloud Platform (GCP) Compute Engine VM (Debian 11)**
+The architecture is designed around an event-driven microservices topology, logically isolated at the service and database layers while being resource-optimized to run on a single host.
 
-**Hello AI! I am transitioning from a previous architecture setup chat. You are now assisting me as a Senior DevOps and Full-Stack Architect. Below is the complete context of my environment. Please read this carefully and strictly adhere to these constraints when providing solutions.**
+---
 
-### 1. Infrastructure (GCP & Networking)
+## 1. System Overview & Current Architecture
 
-* **Public IP**: **34.155.70.30**
-* **DNS & Routing**: Managed via Cloudflare.
+The production-like environment for the AL-Mizan platform is deployed on **Google Cloud Platform (GCP)** and routed securely via **Cloudflare**.
 
-  * **https://klodit.app** **→ Cloudflare Origin Rule rewrites to** **34.155.70.30:4000** **(Next.js Client).**
-* **https://api.klodit.app** **→ Cloudflare Origin Rule rewrites to** **34.155.70.30:3000** **(API Gateway).**
-* **TLS is handled by Cloudflare (Flexible mode).**
-* **Constraint**: Do NOT suggest managed cloud databases (Cloud SQL, Memorystore). Everything runs locally on this single VM via **docker-compose** **to fit a strict startup budget.**
+### Infrastructure Specs (GCP VM)
 
-### 2. Docker Compose Topology (**al-mizan-deployments** **repo)**
+* **Instance Name:** `almizan`
+* **Machine Type:** `c3d-standard-8` (Compute Engine 3rd Generation AMD)
+* **CPU:** 8 vCPUs (Dedicated AMD EPYC Genoa Zen 4 threads with AVX-512 acceleration)
+* **RAM:** 32 GB DDR5 High-Bandwidth Memory
+* **Storage:** 100 GB Hyperdisk Balanced (`pd-balanced` / `pd-ssd`)
+* **Region/Zone:** Netherlands (`europe-west4-a`)
+* **Hardware Offloading:** Powered by Google's custom **Titanium IPU** (Infrastructure Processing Unit) to offload storage, networking, and hypervisor tasks.
 
-**All services run in a single** **docker-compose.yml** **under a custom external bridge network (**al-mizan-network**).**
+### Networking & Routing Topology
 
-**Infrastructure Containers:**
+* **Static External IP:** `34.7.144.196`
+* **Primary Domain:** `https://klodit.app` (Routes to Next.js Client on Port `4000`)
+* **API Domain:** `https://api.klodit.app` (Routes to API Gateway on Port `3000`)
+* **DNS & WAF Provider:** Cloudflare
+  * *Flexible SSL:* Manages public HTTPS (TLS 1.3) termination at the edge.
+  * *Origin Rules:* Rewrites incoming traffic on port 80/443 directly to origin ports `4000` (for web client) and `3000` (for API gateway).
 
-* **al-mizan-mysql** **(MySQL 8): Exposed on** **3306**. Houses **all** **microservice databases (**auth_db**,** **al_mizan_users**, **document_db**, **ao_db**, **soumission_db**, **evaluation_db**, **commission_db**, **recours_db**, **notif_db**).
-* **al-mizan-redis** **(Redis 7-alpine): Exposed on** **6379**. Used for Session caching, Rate Limiting, and JWT Blacklisting.
-* **al-mizan-rabbitmq** **(RabbitMQ 3-management): Exposed on** **5672**. Exchange: **al-mizan.events** **(topic).**
-* **al-mizan-minio** **(MinIO): Exposed on** **9000** **(API) and** **9001** **(Console). Used for secure PDF/Document storage.**
+## 2. Docker Compose Topology
 
-**Microservice Containers (11 total):**
+The platform deployment is split into two distinct orchestration files to ensure clean lifecycle management:
 
-* **api-gateway** **(Port 3000): Node.js / Express.**
-* **auth-service** **(Port 3001): Node.js / Prisma.**
-* **users-service** **(Port 3002): NestJS / Prisma.**
-* **documents-service** **(Port 8005): NestJS / Prisma.**
-* **appel-offres-service** **(Port 8003): NestJS / Prisma.**
-* **soumission-service** **(Port 8004):** **Java Spring Boot 3 / Hibernate**. (Handles Shamir Secret Sharing & AES-GCM Encryption).
-* **evaluation-service** **(Port 8008): NestJS / TypeORM.**
-* **commission-service** **(Port 8007): NestJS / TypeORM.**
-* **recours-service** **(Port 8008 mapped to 8008): NestJS / Prisma 7 (Requires** **prisma.config.ts**).
-* **notification-service** **(Port 8010): NestJS / Prisma.**
-* **client** **(Port 4000): Next.js 15+ (App Router).**
+### A. Core Infrastructure (`docker-compose.infra.yml`)
 
-### 3. CI/CD Pipeline (GitHub Actions)
+Deploys shared middleware and stateful data stores on an isolated, external network.
 
-* **GitOps Workflow**: We use GitHub Actions (**appleboy/ssh-action**) to automate deployments.
-* **Secrets**: **GCP_HOST**, **GCP_USERNAME**, and **GCP_SSH_KEY** **are injected into every private repository using the** **gh** **CLI.**
-* **Trigger**: Any push to **main** **triggers a workflow that SSHs into the GCP server, pulls the specific repository, navigates to** **~/al-mizan-deployment**, and runs **sudo docker-compose up -d --build <service_name>**.
+* **MySQL 8 (`al-mizan-mysql`):** Listens on port `3306`. Persisted via `mysql_data` volume. Holds all isolated logical microservice databases.
+* **Redis 7 (`al-mizan-redis`):** Listens on port `6379`. Handles session stores and global cache limits.
+* **RabbitMQ 3 (`al-mizan-rabbitmq`):** Listens on ports `5672` (AMQP) and `15672` (Management UI). Manages asynchronous event publishing.
+* **MinIO (`al-mizan-minio`):** Listens on ports `9000` (S3 API) and `9001` (Console). Persisted via `minio_data` volume. Manages encrypted administrative and financial PDF document storage.
 
-### 4. Technical Quirks & Hacks Applied (DO NOT REVERT THESE)
+### B. Microservices Application (`docker-compose.yml`)
 
-* **Alpine Linux & Prisma**: Added **RUN apk add --no-cache openssl** **to all Node Dockerfiles to prevent Prisma Engine crashes on Alpine.**
-* **Next.js 15 Suspense**: Added a **`<Suspense>`** **boundary in** **src/app/[locale]/auth/layout.tsx** **to prevent production build crashes caused by** **useSearchParams()**.
-* **API Gateway Routing**: The backend services use global prefixes (e.g., **/api/v1/** **or** **/recours-service/v1/**). The API Gateway handles the routing via **http-proxy-middleware**.
-* **TypeORM Auto-Migration**: For **evaluation-service** **and** **commission-service**, **NODE_ENV=development** **is forced in the** **docker-compose.yml** **so TypeORM uses** **synchronize: true** **to auto-create tables.**
-* **Shamir's Secret Sharing (Java)**: The Java **soumission-service** **implements strict Shamir cryptography. It requires exactly 5 User IDs (Commission Members) to generate a key, and exactly 3 Key Fragments (**fragment_cle**) to decrypt financial offers.**
-* **E2EE File Uploads (Java)**: MinIO financial uploads require **fichierChiffre** **(AES encrypted),** **signatureEcdsa** **(digital signature), and** **clePubliqueEcdsaPem**.
+Deploys the 11 stateless application containers. Build contexts are mapped as relative siblings (e.g., `../auth-service`).
 
-### 5. Current State & Testing
+* **api-gateway (Port `3000`):** Single entry point routing requests, validating RBAC, and publishing audit logs.
+* **auth-service (Port `3001`):** Handles JWT generation, rotation, sessions, and MFA/TOTP flows.
+* **users-service (Port `3002`):** Manages user profiles, organizations, and role assignments.
+* **client (Port `4000`):** Next.js 14 bilingual web application.
+* **appel-offres-service (Port `8003`):** Manages tender creation, lots, and eligibility rules.
+* **soumission-service (Port `8004`):** Java Spring Boot application implementing E2EE bid submission.
+* **documents-service (Port `8005`):** Integrates OCR/NLP processing and MinIO client integrations.
+* **evaluation-service (Port `8008`):** Handles bid scoring, grading matrices, and ranking calculations.
+* **commission-service (Port `8007`):** Manages opening sessions, jury quorums, and PV generation.
+* **recours-service (Port `8008`):** Processes operator appeals and legal timeline verifications.
+* **notification-service (Port `8010`):** Dispatches SMTP emails, SMS, and Android push notifications.
 
-* **All 11 microservices and 5 infra containers are** **UP** **and** **healthy**.
-* **We have a comprehensive Integration Test suite in** **~/Al-Mizan-Tests/** **consisting of 8 bash scripts (**phase1.sh **to** **phase8.sh**) that use **curl** **and** **jq** **to execute the full Golden Path (Auth -> Tender -> E2EE Bid -> Shamir Decrypt -> Score -> Contract -> Appeal -> Notification).**
-* **Everything is 100% operational.**
+---
+
+## 3. Database Isolation (Database-per-Service Pattern)
+
+The platform utilizes a **Schema-per-Service** strategy.
+
+While optimized physically inside a single MySQL engine container to prevent RAM exhaustion (OOM), each microservice is strictly isolated inside its own private logical database schema. Cross-service database queries are structurally impossible.
+
+| Microservice             | Logical Database Schema |
+| ------------------------ | ----------------------- |
+| `auth-service`         | `auth_db`             |
+| `users-service`        | `al_mizan_users`      |
+| `appel-offres-service` | `ao_db`               |
+| `soumission-service`   | `soumission_db`       |
+| `documents-service`    | `document_db`         |
+| `evaluation-service`   | `evaluation_db`       |
+| `commission-service`   | `commission_db`       |
+| `recours-service`      | `recours_db`          |
+| `notification-service` | `notif_db`            |
+
+---
+
+## 4. Next.js Server-Side Render (SSR) Cloudflare Bypass
+
+In traditional architectures where Next.js runs behind Cloudflare, server-side fetch calls (SSR) pointing back to the public domain (e.g., `https://klodit.app`) trigger **Cloudflare Error 1000 (prohibited IP loopback)** because Cloudflare detects a loopback connection coming from the origin IP itself.
+
+To resolve this, the AL-Mizan frontend implements a **Server-Side Decoupling Pattern** in `client.ts`:
+
+```typescript
+function buildUrl(path: string): string {
+  const isServer = typeof window === 'undefined';
+  
+  // If executing on the server (SSR), fetch directly inside the Docker network.
+  // If executing on the browser, use relative paths to route safely via Cloudflare.
+  const baseUrl = isServer 
+    ? 'http://api-gateway:3000' 
+    : '';
+
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl}${normalizedPath}`;
+}
+```
+
+* **Server-Side:** Next.js bypasses Cloudflare entirely, calling `http://api-gateway:3000` over the internal Docker network (`al-mizan-network`), resulting in sub-millisecond API latency.
+* **Client-Side:** The browser makes a relative call to `/api/v1/*`, resolving safely to `https://klodit.app/*`.
+
+---
+
+## 5. Automated CI/CD Pipelines
+
+Each of the 12 repositories contains a GitHub Actions deployment workflow located in `.github/workflows/deploy.yml`.
+
+When code is pushed to the `main` or `master` branches:
+
+1. The GitHub runner establishes a secure SSH connection to the GCP VM.
+2. The runner executes a remote pull (`git pull`) in the respective service folder.
+3. It navigates to `~/al-mizan-deployments` and runs `docker compose up -d --build <service_name>` to compile and hot-swap the modified container.
+
+### Required GitHub Secrets
+
+To allow these workflows to run, the following secrets must be configured in your GitHub repository settings:
+
+* `GCP_HOST`: `34.7.144.196` (The static public IP of your VM)
+* `GCP_USERNAME`: `sariyanouche7_gmail_com` (Your VM SSH user)
+* `GCP_SSH_KEY`: The private OpenSSH key corresponding to the authorized metadata key on the VM.
+* `GCP_PASSPHRASE`: (The passphrase protecting your private key)
