@@ -204,9 +204,9 @@ services:
     env_file:
       - ../al-mizan-recours-service/.env
     ports:
-      - "8009:8009"
+      - "8008:8008"
     environment:
-      - PORT=8009
+      - PORT=8008
       - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/recours_db
       - REDIS_HOST=al-mizan-redis
       - REDIS_PORT=6379
@@ -240,9 +240,9 @@ services:
     env_file:
       - ../al-mizan-audit-service/.env
     ports:
-      - "3009:3009"
+      - "8009:8009"
     environment:
-      - PORT=3009
+      - PORT=8009
       - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/audit_db
       - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
       - NODE_ENV=production
