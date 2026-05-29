@@ -20,6 +20,7 @@ services:
       - COMMISSIONS_SERVICE_URL=http://commission-service:8007
       - APPEALS_SERVICE_URL=http://recours-service:8008
       - NOTIFICATIONS_SERVICE_URL=http://notification-service:8010
+      - AUDIT_SERVICE_URL=http://audit-service:3009
       - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://34.155.70.30:4000,http://localhost:4000
     networks:
       - al-mizan-network
@@ -209,6 +210,20 @@ services:
       - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/notif_db
       - REDIS_HOST=al-mizan-redis
       - REDIS_PORT=6379
+      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+    networks:
+      - al-mizan-network
+    restart: unless-stopped
+
+  audit-service:
+    build: ../audit-service
+    container_name: audit-service
+    ports:
+      - "3009:3009"
+    environment:
+      - NODE_ENV=production
+      - PORT=3009
+      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/audit_db
       - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
     networks:
       - al-mizan-network
