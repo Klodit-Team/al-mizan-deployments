@@ -3,8 +3,10 @@ version: '3.3'
 services:
   # ═════════ 1. CORE SERVICES ═════════
   api-gateway:
-    build: ../api-gateway
+    build: ../al-mizan-api-gateway
     container_name: api-gateway
+    env_file:
+      - ../al-mizan-api-gateway/.env
     ports:
       - "3000:3000"
     environment:
@@ -18,7 +20,7 @@ services:
       - SUBMISSIONS_SERVICE_URL=http://soumission-service:8004
       - EVALUATIONS_SERVICE_URL=http://evaluation-service:8008
       - COMMISSIONS_SERVICE_URL=http://commission-service:8007
-      - APPEALS_SERVICE_URL=http://recours-service:8008
+      - APPEALS_SERVICE_URL=http://recours-service:8009
       - NOTIFICATIONS_SERVICE_URL=http://notification-service:8010
       - AUDIT_SERVICE_URL=http://audit-service:3009
       - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://34.155.70.30:4000,http://localhost:4000
@@ -27,10 +29,10 @@ services:
     restart: unless-stopped
 
   auth-service:
-    build: ../auth-service
+    build: ../al-mizan-auth-service
     container_name: auth-service
     env_file:
-      - .env
+      - ../al-mizan-auth-service/.env
     ports:
       - "3001:3001"
     environment:
@@ -49,8 +51,10 @@ services:
     restart: unless-stopped
 
   users-service:
-    build: ../users-service
+    build: ../al-mizan-users-service
     container_name: users-service
+    env_file:
+      - ../al-mizan-users-service/.env
     ports:
       - "3002:3002"
     environment:
@@ -61,24 +65,26 @@ services:
       - al-mizan-network
     restart: unless-stopped
 
-  client:
-    build:
-      context: ../client
-      args:
-        - NEXT_PUBLIC_API_URL=http://api-gateway:3000
-    container_name: client
-    ports:
-      - "4000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://api-gateway:3000
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
+  # client:
+  #   build:
+  #     context: ../client
+  #     args:
+  #       - NEXT_PUBLIC_API_URL=http://api-gateway:3000
+  #   container_name: client
+  #   ports:
+  #     - "4000:3000"
+  #   environment:
+  #     - NEXT_PUBLIC_API_URL=http://api-gateway:3000
+  #   networks:
+  #     - al-mizan-network
+  #   restart: unless-stopped
 
   # ═════════ 2. BUSINESS SERVICES ═════════
   appel-offres-service:
-    build: ../appel-offres-service
+    build: ../al-mizan-appel-offres-service
     container_name: appel-offres-service
+    env_file:
+      - ../al-mizan-appel-offres-service/.env
     ports:
       - "8003:8003"
     environment:
@@ -93,7 +99,7 @@ services:
     restart: unless-stopped
 
   soumission-service:
-    build: ../soumission-service
+    build: ../al-mizan-soummission-service
     container_name: soumission-service
     ports:
       - "8004:8004"
@@ -123,8 +129,10 @@ services:
     restart: unless-stopped
 
   documents-service:
-    build: ../documents-service
+    build: ../al-mizan-documents-service
     container_name: documents-service
+    env_file:
+      - ../al-mizan-documents-service/.env
     ports:
       - "8005:8005"
     environment:
@@ -143,8 +151,10 @@ services:
     restart: unless-stopped
 
   evaluation-service:
-    build: ../evaluation-service
+    build: ../al-mizan-evaluation-service
     container_name: evaluation-service
+    env_file:
+      - ../al-mizan-evaluation-service/.env
     ports:
       - "8006:8008" 
     environment:
@@ -165,8 +175,10 @@ services:
     restart: unless-stopped
 
   commission-service:
-    build: ../commission-service
+    build: ../al-mizan-commission-service
     container_name: commission-service
+    env_file:
+      - ../al-mizan-commission-service/.env
     ports:
       - "8007:8007"
     environment:
@@ -187,8 +199,10 @@ services:
     restart: unless-stopped
 
   recours-service:
-    build: ../recours-service
+    build: ../al-mizan-recours-service
     container_name: recours-service
+    env_file:
+      - ../al-mizan-recours-service/.env
     ports:
       - "8008:8008"
     environment:
@@ -196,13 +210,18 @@ services:
       - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/recours_db
       - REDIS_HOST=al-mizan-redis
       - REDIS_PORT=6379
+      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
     networks:
       - al-mizan-network
     restart: unless-stopped
 
   notification-service:
-    build: ../notification-service
+    build:
+      context: ../al-mizan-notification-service
+      network: host
     container_name: notification-service
+    env_file:
+      - ../al-mizan-notification-service/.env
     ports:
       - "8010:8010"
     environment:
@@ -216,15 +235,17 @@ services:
     restart: unless-stopped
 
   audit-service:
-    build: ../audit-service
+    build: ../al-mizan-audit-service
     container_name: audit-service
+    env_file:
+      - ../al-mizan-audit-service/.env
     ports:
-      - "3009:3009"
+      - "8009:8009"
     environment:
-      - NODE_ENV=production
-      - PORT=3009
+      - PORT=8009
       - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/audit_db
       - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+      - NODE_ENV=production
     networks:
       - al-mizan-network
     restart: unless-stopped
