@@ -1,21 +1,9 @@
-# ═══════════════════════════════════════════════════════════════════════════════
-# AL-MIZAN — Infrastructure Compose
-# Stateful backing services: MySQL, Redis, RabbitMQ, MinIO.
-# This file also creates the shared Docker network used by all other compose files.
-#
-# Usage (standalone):
-#   docker compose -f docker-compose.infra.yml up -d
-# ═══════════════════════════════════════════════════════════════════════════════
-
 services:
-
   mysql:
-    image: mysql:8.4
+    image: mysql:8
     container_name: al-mizan-mysql
     environment:
       MYSQL_ROOT_PASSWORD: password
-      MYSQL_CHARSET: utf8mb4
-      MYSQL_COLLATION: utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     volumes:
@@ -23,35 +11,16 @@ services:
     networks:
       - al-mizan-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    command: >
-      --character-set-server=utf8mb4
-      --collation-server=utf8mb4_unicode_ci
-
   redis:
     image: redis:7-alpine
     container_name: al-mizan-redis
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
     networks:
       - al-mizan-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    command: redis-server --save 60 1 --loglevel warning
-
   rabbitmq:
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:3-management-alpine
     container_name: al-mizan-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
@@ -59,20 +28,11 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - al-mizan-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 30s
-
   minio:
-    image: minio/minio:latest
+    image: minio/minio
     container_name: al-mizan-minio
     environment:
       MINIO_ROOT_USER: minioadmin
@@ -86,20 +46,12 @@ services:
     networks:
       - al-mizan-network
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
 volumes:
   mysql_data:
-  redis_data:
-  rabbitmq_data:
+  postgres_data:
   minio_data:
 
 networks:
   al-mizan-network:
-    name: al-mizan-network
-    driver: bridge
+    external: true
