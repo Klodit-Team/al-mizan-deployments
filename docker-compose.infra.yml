@@ -30,6 +30,11 @@ services:
       - "15672:15672"
     networks:
       - al-mizan-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
     restart: unless-stopped
   minio:
     image: minio/minio
