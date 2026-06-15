@@ -21,7 +21,7 @@ x-agent-common: &agent-common
   working_dir: /workspace
   restart: "no"
   depends_on:
-    al-mizan-rabbitmq:
+    rabbitmq:
       condition: service_healthy
   networks:
     - al-mizan-network
