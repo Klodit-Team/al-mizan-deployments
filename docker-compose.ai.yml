@@ -190,5 +190,4 @@ services:
 
 networks:
   al-mizan-network:
-    name: al-mizan-network
-    driver: bridge
+    external: true
