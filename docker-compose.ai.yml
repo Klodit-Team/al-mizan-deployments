@@ -36,7 +36,7 @@ x-backend-env: &backend-env
   SOUMMISSION_ANOMALY_ENDPOINT: /api/v1/soumissions/{soumissionId}/anomalies
   DOCUMENTS_BASE_URL: http://documents-service:8005
   DOCUMENTS_SERVICE_TOKEN: ${DOCUMENTS_SERVICE_TOKEN}
-  DOCUMENTS_RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+  DOCUMENTS_RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
   DOCUMENTS_OCR_RESULTS_QUEUE: documents.ocr.results
   EVALUATION_BASE_URL: http://evaluation-service:8008
   EVALUATION_SERVICE_TOKEN: ${EVALUATION_SERVICE_TOKEN}
@@ -110,12 +110,12 @@ services:
     working_dir: /workspace
     environment:
       <<: [*backend-env, *mcp-env]
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       AI_AGENTS_PATH: /workspace/ai-agents/src/agents
       NODE_ENV: production
       PORT: 3099
     depends_on:
-      al-mizan-rabbitmq:
+      rabbitmq:
         condition: service_healthy
     networks:
       - al-mizan-network
