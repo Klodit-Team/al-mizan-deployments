@@ -1,7 +1,44 @@
-version: '3.3'
+# ═══════════════════════════════════════════════════════════════════════════════
+# AL-MIZAN — Production Compose
+# All application services. Run together with docker-compose.infra.yml.
+#
+# Usage:
+#   docker compose -f docker-compose.infra.yml -f docker-compose.yml up -d
+#
+# Port scheme (container = host, no mapping confusion):
+#   api-gateway       3000    auth-service      3001    users-service     3002
+#   audit-service     3009    client            4000    appel-offres      8003
+#   soumission        8004    documents         8005    evaluation        8008
+#   commission        8007    recours           8009    notification      8010
+# ═══════════════════════════════════════════════════════════════════════════════
 
 services:
-  # ═════════ 1. CORE SERVICES ═════════
+
+  # ─── Client (Next.js) ──────────────────────────────────────────────────────
+  client:
+    build:
+      context: ../al-mizan-client
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3000
+    container_name: al-mizan-client
+    ports:
+      - "4000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    depends_on:
+      - api-gateway
+    networks:
+      - al-mizan-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ─── API Gateway ───────────────────────────────────────────────────────────
   api-gateway:
     build: ../al-mizan-api-gateway
     container_name: api-gateway
@@ -11,8 +48,8 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - REDIS_URL=redis://al-mizan-redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - AUTH_SERVICE_URL=http://auth-service:3001
       - USERS_SERVICE_URL=http://users-service:3002
       - DOCUMENTS_SERVICE_URL=http://documents-service:8005
@@ -23,11 +60,21 @@ services:
       - APPEALS_SERVICE_URL=http://recours-service:8009
       - NOTIFICATIONS_SERVICE_URL=http://notification-service:8010
       - AUDIT_SERVICE_URL=http://audit-service:3009
-      - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://34.155.70.30:4000,http://localhost:4000
+      - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://localhost:4000,http://localhost:3000
+    depends_on:
+      - auth-service
+      - users-service
     networks:
       - al-mizan-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
+  # ─── Auth Service ──────────────────────────────────────────────────────────
   auth-service:
     build: ../al-mizan-auth-service
     container_name: auth-service
@@ -37,19 +84,23 @@ services:
       - "3001:3001"
     environment:
       - PORT=3001
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/auth_db
-      - REDIS_URL=redis://al-mizan-redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+      - DATABASE_URL=mysql://root:password@mysql:3306/auth_db
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - ACCESS_TOKEN_SECRET=supersecretaccess
       - REFRESH_TOKEN_SECRET=supersecretrefresh
       - ACCESS_TOKEN_EXPIRY=1h
       - REFRESH_TOKEN_EXPIRY=7d
       - USERS_SERVICE_URL=http://users-service:3002
       - COOKIE_DOMAIN=.klodit.app
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
+  # ─── Users Service ─────────────────────────────────────────────────────────
   users-service:
     build: ../al-mizan-users-service
     container_name: users-service
@@ -59,27 +110,38 @@ services:
       - "3002:3002"
     environment:
       - PORT=3002
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/al_mizan_users
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+      - DATABASE_URL=mysql://root:password@mysql:3306/al_mizan_users
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
-  # client:
-  #   build:
-  #     context: ../client
-  #     args:
-  #       - NEXT_PUBLIC_API_URL=http://api-gateway:3000
-  #   container_name: client
-  #   ports:
-  #     - "4000:3000"
-  #   environment:
-  #     - NEXT_PUBLIC_API_URL=http://api-gateway:3000
-  #   networks:
-  #     - al-mizan-network
-  #   restart: unless-stopped
+  # ─── Audit Service (port 3009) ─────────────────────────────────────────────
+  audit-service:
+    build: ../al-mizan-audit-service
+    container_name: audit-service
+    env_file:
+      - ../al-mizan-audit-service/.env
+    ports:
+      - "3009:3009"
+    environment:
+      - PORT=3009
+      - DATABASE_URL=mysql://root:password@mysql:3306/audit_db
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - NODE_ENV=production
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - al-mizan-network
+    restart: unless-stopped
 
-  # ═════════ 2. BUSINESS SERVICES ═════════
+  # ─── Appel d'Offres Service ────────────────────────────────────────────────
   appel-offres-service:
     build: ../al-mizan-appel-offres-service
     container_name: appel-offres-service
@@ -89,45 +151,52 @@ services:
       - "8003:8003"
     environment:
       - PORT=8003
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/ao_db
-      - REDIS_HOST=al-mizan-redis
+      - DATABASE_URL=mysql://root:password@mysql:3306/ao_db
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
       - DOCUMENT_SERVICE_URL=http://documents-service:8005
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
+  # ─── Soumission Service (Java/Spring Boot) ─────────────────────────────────
   soumission-service:
     build: ../al-mizan-soummission-service
     container_name: soumission-service
     ports:
       - "8004:8004"
     environment:
-      - SPRING_PROFILES_ACTIVE=dev
-      - security.dev-fallback.enabled=true
-      - DB_HOST=al-mizan-mysql
+      - SPRING_PROFILES_ACTIVE=prod
+      - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USERNAME=root
       - DB_PASSWORD=password
-      - DB_DATABASE=soumission_db 
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update  
-      - REDIS_HOST=al-mizan-redis
+      - DB_DATABASE=soumission_db
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - RABBITMQ_HOST=al-mizan-rabbitmq
-      - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://localhost:4000
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
-      - MINIO_ENDPOINT=http://al-mizan-minio:9000
+      - MINIO_ENDPOINT=http://minio:9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET_NAME=al-mizan-docs
       - AO_SERVICE_URL=http://appel-offres-service:8003
       - USER_SERVICE_URL=http://users-service:3002
       - DOCUMENT_SERVICE_URL=http://documents-service:8005
+      - CORS_ORIGINS=https://klodit.app,https://api.klodit.app,http://localhost:4000
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
+  # ─── Documents Service ─────────────────────────────────────────────────────
   documents-service:
     build: ../al-mizan-documents-service
     container_name: documents-service
@@ -137,43 +206,51 @@ services:
       - "8005:8005"
     environment:
       - PORT=8005
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/document_db
-      - MINIO_ENDPOINT=al-mizan-minio
+      - DATABASE_URL=mysql://root:password@mysql:3306/document_db
+      - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
       - MINIO_USE_SSL=false
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MINIO_BUCKET_NAME=al-mizan-docs
-      - REDIS_URL=redis://al-mizan-redis:6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+      - REDIS_URL=redis://redis:6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
+  # ─── Evaluation Service (port 8008) ────────────────────────────────────────
   evaluation-service:
     build: ../al-mizan-evaluation-service
     container_name: evaluation-service
     env_file:
       - ../al-mizan-evaluation-service/.env
     ports:
-      - "8006:8008" 
+      - "8008:8008"
     environment:
-      - NODE_ENV=development 
+      - NODE_ENV=production
       - PORT=8008
-      - DB_HOST=al-mizan-mysql
+      - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USERNAME=root
       - DB_PASSWORD=password
       - DB_DATABASE=evaluation_db
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-      - MINIO_ENDPOINT=al-mizan-minio
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
+  # ─── Commission Service ────────────────────────────────────────────────────
   commission-service:
     build: ../al-mizan-commission-service
     container_name: commission-service
@@ -182,43 +259,50 @@ services:
     ports:
       - "8007:8007"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - PORT=8007
-      - DB_HOST=al-mizan-mysql
+      - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USERNAME=root
       - DB_PASSWORD=password
       - DB_DATABASE=commission_db
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-      - MINIO_ENDPOINT=al-mizan-minio
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - MINIO_ENDPOINT=minio
       - MINIO_PORT=9000
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
+  # ─── Recours Service (port 8009) ───────────────────────────────────────────
   recours-service:
     build: ../al-mizan-recours-service
     container_name: recours-service
     env_file:
       - ../al-mizan-recours-service/.env
     ports:
-      - "8008:8008"
+      - "8009:8009"
     environment:
-      - PORT=8008
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/recours_db
-      - REDIS_HOST=al-mizan-redis
+      - PORT=8009
+      - DATABASE_URL=mysql://root:password@mysql:3306/recours_db
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
+  # ─── Notification Service (port 8010, prefix: notification-service/v1) ─────
   notification-service:
     build:
       context: ../al-mizan-notification-service
-      network: host
     container_name: notification-service
     env_file:
       - ../al-mizan-notification-service/.env
@@ -226,30 +310,20 @@ services:
       - "8010:8010"
     environment:
       - PORT=8010
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/notif_db
-      - REDIS_HOST=al-mizan-redis
+      - DATABASE_URL=mysql://root:password@mysql:3306/notif_db
+      - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-    networks:
-      - al-mizan-network
-    restart: unless-stopped
-
-  audit-service:
-    build: ../al-mizan-audit-service
-    container_name: audit-service
-    env_file:
-      - ../al-mizan-audit-service/.env
-    ports:
-      - "8009:8009"
-    environment:
-      - PORT=8009
-      - DATABASE_URL=mysql://root:password@al-mizan-mysql:3306/audit_db
-      - RABBITMQ_URL=amqp://guest:guest@al-mizan-rabbitmq:5672
-      - NODE_ENV=production
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - al-mizan-network
     restart: unless-stopped
 
 networks:
   al-mizan-network:
-    external: true
+    name: al-mizan-network
+    driver: bridge

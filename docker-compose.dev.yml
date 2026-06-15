@@ -1,0 +1,147 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# AL-MIZAN — Development Overrides
+# Layered on top of docker-compose.yml for hot-reload development.
+# Source code is volume-mounted so changes take effect without rebuild.
+#
+# Usage:
+#   docker compose -f docker-compose.infra.yml -f docker-compose.yml -f docker-compose.dev.yml up --build
+#   (or simply: make up-dev)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ─── Client (Next.js dev server) ──────────────────────────────────────────
+  client:
+    build:
+      context: ../al-mizan-client
+      dockerfile: Dockerfile.dev
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3000
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    volumes:
+      - ../al-mizan-client/src:/app/src
+      - ../al-mizan-client/public:/app/public
+
+  # ─── API Gateway ──────────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ../al-mizan-api-gateway
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - CORS_ORIGINS=http://localhost:4000,http://localhost:3000
+    volumes:
+      - ../al-mizan-api-gateway/src:/app/src
+
+  # ─── Auth Service ─────────────────────────────────────────────────────────
+  auth-service:
+    build:
+      context: ../al-mizan-auth-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-auth-service/src:/app/src
+      - ../al-mizan-auth-service/prisma:/app/prisma
+
+  # ─── Users Service ────────────────────────────────────────────────────────
+  users-service:
+    build:
+      context: ../al-mizan-users-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-users-service/src:/app/src
+      - ../al-mizan-users-service/prisma:/app/prisma
+
+  # ─── Audit Service ────────────────────────────────────────────────────────
+  audit-service:
+    build:
+      context: ../al-mizan-audit-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-audit-service/src:/app/src
+      - ../al-mizan-audit-service/prisma:/app/prisma
+
+  # ─── Appel d'Offres Service ───────────────────────────────────────────────
+  appel-offres-service:
+    build:
+      context: ../al-mizan-appel-offres-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-appel-offres-service/src:/app/src
+      - ../al-mizan-appel-offres-service/prisma:/app/prisma
+
+  # ─── Soumission Service (Java/Spring Boot) ────────────────────────────────
+  # No dev Dockerfile needed: Spring Boot devtools handle hot-reload via profile
+  soumission-service:
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - security.dev-fallback.enabled=true
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+
+  # ─── Documents Service ────────────────────────────────────────────────────
+  documents-service:
+    build:
+      context: ../al-mizan-documents-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-documents-service/src:/app/src
+      - ../al-mizan-documents-service/prisma:/app/prisma
+
+  # ─── Evaluation Service ───────────────────────────────────────────────────
+  evaluation-service:
+    build:
+      context: ../al-mizan-evaluation-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-evaluation-service/src:/app/src
+
+  # ─── Commission Service ───────────────────────────────────────────────────
+  commission-service:
+    build:
+      context: ../al-mizan-commission-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-commission-service/src:/app/src
+
+  # ─── Recours Service ──────────────────────────────────────────────────────
+  recours-service:
+    build:
+      context: ../al-mizan-recours-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-recours-service/src:/app/src
+      - ../al-mizan-recours-service/prisma:/app/prisma
+
+  # ─── Notification Service ─────────────────────────────────────────────────
+  notification-service:
+    build:
+      context: ../al-mizan-notification-service
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../al-mizan-notification-service/src:/app/src
+      - ../al-mizan-notification-service/prisma:/app/prisma
+
+networks:
+  al-mizan-network:
+    name: al-mizan-network
+    driver: bridge
