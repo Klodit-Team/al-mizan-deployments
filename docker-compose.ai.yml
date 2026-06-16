@@ -22,7 +22,7 @@ x-agent-common: &agent-common
   restart: "no"
   depends_on:
     rabbitmq:
-      condition: service_healthy
+      condition: service_started
   networks:
     - al-mizan-network
 
@@ -93,7 +93,7 @@ services:
       PORT: 3099
     depends_on:
       rabbitmq:
-        condition: service_healthy
+        condition: service_started
     networks:
       - al-mizan-network
     restart: unless-stopped
