@@ -20,6 +20,8 @@ x-agent-common: &agent-common
     dockerfile: ai-agents/Dockerfile
   working_dir: /workspace
   restart: "no"
+  env_file:
+    - .env
   depends_on:
     rabbitmq:
       condition: service_started
@@ -38,7 +40,6 @@ x-backend-env: &backend-env
   DOC_ANALYSIS_BASE_URL: http://localhost:4010/ocr
   NLP_BASE_URL: http://localhost:4010/nlp
   ANOMALY_BASE_URL: http://localhost:4010/anomaly
-  GEMINI_API_KEY: ${GEMINI_API_KEY}
 
 x-mcp-env: &mcp-env
   MCP_AO_COMMAND: tsx
@@ -85,6 +86,8 @@ services:
       dockerfile: ai-orchestrator/Dockerfile
     container_name: ai-orchestrator
     working_dir: /workspace
+    env_file:
+      - .env
     environment:
       <<: [*backend-env, *mcp-env]
       RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672

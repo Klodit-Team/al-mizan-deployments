@@ -211,13 +211,14 @@ services:
     container_name: notification-service
     ports:
       - "8010:8010"
+    env_file:
+      - .env
     environment:
       PORT: 8010
       DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/notif_db
       REDIS_HOST: al-mizan-redis
       REDIS_PORT: 6379
       RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
-      RESEND_API_KEY: ${RESEND_API_KEY}
     networks:
       - al-mizan-network
     restart: unless-stopped
