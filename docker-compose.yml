@@ -103,8 +103,8 @@ services:
       REDIS_PORT: 6379
       RABBITMQ_HOST: al-mizan-rabbitmq
       RABBITMQ_PORT: 5672
-      RABBITMQ_USERNAME: \$\{RABBITMQ_DEFAULT_USER\}
-      RABBITMQ_PASSWORD: \$\{RABBITMQ_DEFAULT_PASS\}
+      RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
       CORS_ORIGINS: https://klodit.app,https://api.klodit.app,http://localhost:4000
       MINIO_ENDPOINT: http://al-mizan-minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
