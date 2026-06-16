@@ -7,7 +7,7 @@ services:
     environment:
       PORT: 3000
       REDIS_URL: redis://al-mizan-redis:6379
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
       AUTH_SERVICE_URL: http://auth-service:3001
       USERS_SERVICE_URL: http://users-service:3002
       DOCUMENTS_SERVICE_URL: http://documents-service:8005
@@ -30,15 +30,15 @@ services:
       - "3001:3001"
     environment:
       PORT: 3001
-      DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/auth_db
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@al-mizan-mysql:3306/auth_db
       REDIS_URL: redis://al-mizan-redis:6379
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
-      ACCESS_TOKEN_SECRET: supersecretaccess
-      REFRESH_TOKEN_SECRET: supersecretrefresh
-      ACCESS_TOKEN_EXPIRY: 1h
-      REFRESH_TOKEN_EXPIRY: 7d
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      ACCESS_TOKEN_EXPIRY: ${ACCESS_TOKEN_EXPIRY}
+      REFRESH_TOKEN_EXPIRY: ${REFRESH_TOKEN_EXPIRY}
       USERS_SERVICE_URL: http://users-service:3002
-      COOKIE_DOMAIN: .klodit.app
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
     networks:
       - al-mizan-network
     restart: unless-stopped
@@ -50,8 +50,8 @@ services:
       - "3002:3002"
     environment:
       PORT: 3002
-      DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/al_mizan_users
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@al-mizan-mysql:3306/al_mizan_users
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
     networks:
       - al-mizan-network
     restart: unless-stopped
@@ -77,10 +77,10 @@ services:
       - "8003:8003"
     environment:
       PORT: 8003
-      DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/ao_db
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@al-mizan-mysql:3306/ao_db
       REDIS_HOST: al-mizan-redis
       REDIS_PORT: 6379
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
       DOCUMENT_SERVICE_URL: http://documents-service:8005
     networks:
       - al-mizan-network
@@ -97,16 +97,18 @@ services:
       DB_HOST: al-mizan-mysql
       DB_PORT: 3306
       DB_USERNAME: root
-      DB_PASSWORD: password
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       DB_DATABASE: soumission_db
       REDIS_HOST: al-mizan-redis
       REDIS_PORT: 6379
       RABBITMQ_HOST: al-mizan-rabbitmq
       RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: \$\{RABBITMQ_DEFAULT_USER\}
+      RABBITMQ_PASSWORD: \$\{RABBITMQ_DEFAULT_PASS\}
       CORS_ORIGINS: https://klodit.app,https://api.klodit.app,http://localhost:4000
       MINIO_ENDPOINT: http://al-mizan-minio:9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET_NAME: al-mizan-docs
       AO_SERVICE_URL: http://appel-offres-service:8003
       USER_SERVICE_URL: http://users-service:3002
@@ -122,14 +124,14 @@ services:
       - "8005:8005"
     environment:
       PORT: 8005
-      DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/document_db
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@al-mizan-mysql:3306/document_db
       MINIO_ENDPOINT: al-mizan-minio
       MINIO_PORT: 9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKET_NAME: al-mizan-docs
       REDIS_URL: redis://al-mizan-redis:6379
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
     networks:
       - al-mizan-network
     restart: unless-stopped
@@ -145,13 +147,13 @@ services:
       DB_HOST: al-mizan-mysql
       DB_PORT: 3306
       DB_USERNAME: root
-      DB_PASSWORD: password
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       DB_DATABASE: evaluation_db
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
       MINIO_ENDPOINT: al-mizan-minio
       MINIO_PORT: 9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
     networks:
       - al-mizan-network
     restart: unless-stopped
@@ -167,13 +169,13 @@ services:
       DB_HOST: al-mizan-mysql
       DB_PORT: 3306
       DB_USERNAME: root
-      DB_PASSWORD: password
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       DB_DATABASE: commission_db
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
       MINIO_ENDPOINT: al-mizan-minio
       MINIO_PORT: 9000
-      MINIO_ACCESS_KEY: minioadmin
-      MINIO_SECRET_KEY: minioadmin
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
     networks:
       - al-mizan-network
     restart: unless-stopped
@@ -185,7 +187,7 @@ services:
       - "8008:8008"
     environment:
       PORT: 8008
-      DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/recours_db
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@al-mizan-mysql:3306/recours_db
       REDIS_HOST: al-mizan-redis
       REDIS_PORT: 6379
     networks:
@@ -200,8 +202,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3009
-      DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/audit_db
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@al-mizan-mysql:3306/audit_db
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
     networks:
       - al-mizan-network
     restart: unless-stopped
@@ -215,10 +217,10 @@ services:
       - .env
     environment:
       PORT: 8010
-      DATABASE_URL: mysql://root:password@al-mizan-mysql:3306/notif_db
+      DATABASE_URL: mysql://root:${MYSQL_ROOT_PASSWORD}@al-mizan-mysql:3306/notif_db
       REDIS_HOST: al-mizan-redis
       REDIS_PORT: 6379
-      RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
+      RABBITMQ_URL: amqp://${RABBITMQ_DEFAULT_USER}:${RABBITMQ_DEFAULT_PASS}@al-mizan-rabbitmq:5672
     networks:
       - al-mizan-network
     restart: unless-stopped
