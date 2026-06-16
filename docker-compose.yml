@@ -217,7 +217,7 @@ services:
       REDIS_HOST: al-mizan-redis
       REDIS_PORT: 6379
       RABBITMQ_URL: amqp://guest:guest@al-mizan-rabbitmq:5672
-      RESEND_API_KEY: your_resend_key_here # ◄── ADD YOUR KEY HERE
+      RESEND_API_KEY: ${RESEND_API_KEY}
     networks:
       - al-mizan-network
     restart: unless-stopped
