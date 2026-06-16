@@ -40,7 +40,7 @@ x-backend-env: &backend-env
   DOC_ANALYSIS_BASE_URL: http://localhost:4010/ocr
   NLP_BASE_URL: http://localhost:4010/nlp
   ANOMALY_BASE_URL: http://localhost:4010/anomaly
-
+  AO_GRE_A_GRE_SCORE_ENDPOINT: /appels-offres/gre-a-gre/{demandeId}/score-ia
 x-mcp-env: &mcp-env
   MCP_AO_COMMAND: tsx
   MCP_AO_ARGS: '["src/index.ts"]'
