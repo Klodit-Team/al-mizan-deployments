@@ -35,9 +35,9 @@ x-backend-env: &backend-env
   NOTIFICATIONS_BASE_URL: http://notification-service:8010/notification-service/v1
   AUDIT_BASE_URL: http://audit-service:3009/api/v1
   STORAGE_BASE_URL: http://al-mizan-minio:9000
-  DOC_ANALYSIS_BASE_URL: http://localhost:4011
-  NLP_BASE_URL: http://localhost:4014
-  ANOMALY_BASE_URL: http://localhost:4012
+  DOC_ANALYSIS_BASE_URL: http://localhost:4010/ocr
+  NLP_BASE_URL: http://localhost:4010/nlp
+  ANOMALY_BASE_URL: http://localhost:4010/anomaly
   GEMINI_API_KEY: AQ.Ab8RN6KodRNTNwAywA_B0RcZzLS4l1c3YrAzj0z3jCTR_9bdZw # Replace with real key
 
 x-mcp-env: &mcp-env
